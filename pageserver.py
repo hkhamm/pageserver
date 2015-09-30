@@ -7,9 +7,7 @@ Socket programming in Python
   error handling and many other things to keep the illustration as simple
   as possible.
 
-  FIXME:
-  Currently this program always serves an ascii graphic of a cat.
-  Change it to serve files if they end with .html and are in the current directory
+  Serves HTML and CSS files from the directory where the program is run.
 """
 
 import socket    # Basic TCP/IP communication on the internet
@@ -51,11 +49,6 @@ def serve(sock, func):
         (clientsocket, address) = sock.accept()
         _thread.start_new_thread(func, (clientsocket,))
 
-CAT = """
-     ^ ^
-   =(   )=
-   """
-
 def respond(sock):
     """
     Respond (only) to GET
@@ -78,7 +71,21 @@ def respond(sock):
             transmit("HTTP/1.0 200 OK\n\n", sock)
             msg = get_msg('.' + parts[1])
         else:
-            msg = "\nI don't handle this request: {}\n".format(request)
+            transmit("HTTP/1.0 404 Not Found\n\n", sock)
+            msg = """
+            <!DOCTYPE html>
+            <html>
+            <head><title>404 Not Found</title></head>
+            <body>
+            <h1>404 Not Found</h1>
+            <ul>
+            <li>Message: The specified page does not exist.</li>
+            <li>Page: {}</li>
+            </ul>
+            <hr/>
+            </body>
+            </html>
+            """.format(parts[1])
     else:
         msg = "\nI don't handle this request: {}\n".format(request)
 
@@ -106,7 +113,7 @@ def read_file(file):
     return msg
 
 def main():
-    port = random.randint(5000,8000)
+    port = 80 # random.randint(5000,8000)
     sock = listen(port)
     print("Listening on port {}".format(port))
     print("Socket is {}".format(sock))
