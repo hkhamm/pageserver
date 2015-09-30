@@ -15,7 +15,6 @@ Socket programming in Python
 import socket    # Basic TCP/IP communication on the internet
 import random    # To pick a port at random, giving us some chance to pick a port not in use
 import _thread   # Response computation runs concurrently with main program
-import glob
 import os
 
 
@@ -52,17 +51,14 @@ def serve(sock, func):
         (clientsocket, address) = sock.accept()
         _thread.start_new_thread(func, (clientsocket,))
 
-
 CAT = """
      ^ ^
    =(   )=
    """
 
-
 def respond(sock):
     """
     Respond (only) to GET
-
     """
     sent = 0
     request = sock.recv(1024)  # We accept only short requests
@@ -70,23 +66,23 @@ def respond(sock):
     print("\nRequest was {}\n".format(request))
 
     parts = request.split()
-
-    # TODO parse parts to find out what page is requested
-    # if page exists read it and transmit page
-    # if page does not exist transmit error message
+    temp = parts[1].split('.')
 
     if (len(parts) > 1 and parts[0] == "GET" and "~" not in parts[1] and
-           ".." not in parts[1] and "//" not in parts[1]):
-        transmit("HTTP/1.0 200 OK\n\n", sock)
-
-        print(parts[1])
-
-        f = open('trivia.html', 'r')
-        msg = read_file(f)
-
-        transmit(msg, sock)
+            ".." not in parts[1] and "//" not in parts[1]):
+        if parts[1] == "/":
+            transmit("HTTP/1.0 200 OK\n\n", sock)
+            msg = get_msg("./index.html")
+        elif (parts[1][1:] in os.listdir("./") and
+              (temp[1] == 'html' or temp[1] == 'css')):
+            transmit("HTTP/1.0 200 OK\n\n", sock)
+            msg = get_msg('.' + parts[1])
+        else:
+            msg = "\nI don't handle this request: {}\n".format(request)
     else:
-        transmit("\nI don't handle this request: {}\n".format(request), sock)
+        msg = "\nI don't handle this request: {}\n".format(request)
+
+    transmit(msg, sock)
 
     sock.close()
 
@@ -99,18 +95,15 @@ def transmit(msg, sock):
         buff = bytes( msg[sent: ], encoding="utf-8")
         sent += sock.send( buff )
 
+def get_msg(filename):
+    f = open(filename, 'r')
+    return read_file(f)
+
 def read_file(file):
     msg = ""
     for line in file:
         msg = msg + line
     return msg
-
-def check_dir(file):
-    for f in os.listdir("./"):
-        if f == file:
-            return True
-        else:
-            return False
 
 def main():
     port = 80 # random.randint(5000,8000)
