@@ -56,22 +56,24 @@ def respond(sock):
     sent = 0
     request = sock.recv(1024)  # We accept only short requests
     request = str(request, encoding='utf-8', errors='strict')
-    print("\nRequest was {}\n".format(request))
+
+    if request != "":
+        print("\nRequest was {}\n".format(request))
 
     parts = request.split()
 
-    if parts[1] and '.' in parts[1]:
-        ext = parts[1].split('.')
-
     if (len(parts) > 1 and parts[0] == "GET" and "~" not in parts[1] and
             ".." not in parts[1] and "//" not in parts[1]):
+        if "." in parts[1]:
+            ext = parts[1].split(".")
+
         if parts[1] == "/":
             transmit("HTTP/1.0 200 OK\n\n", sock)
             msg = get_msg("./index.html")
         elif (parts[1][1:] in os.listdir("./") and
-              (ext[1] == 'html' or ext[1] == 'css')):
+              (ext[1] == "html" or ext[1] == "css")):
             transmit("HTTP/1.0 200 OK\n\n", sock)
-            msg = get_msg('.' + parts[1])
+            msg = get_msg("." + parts[1])
         else:
             transmit("HTTP/1.0 404 Not Found\n\n", sock)
             msg = """
