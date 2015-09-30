@@ -59,7 +59,9 @@ def respond(sock):
     print("\nRequest was {}\n".format(request))
 
     parts = request.split()
-    temp = parts[1].split('.')
+
+    if parts[1] and '.' in parts[1]:
+        ext = parts[1].split('.')
 
     if (len(parts) > 1 and parts[0] == "GET" and "~" not in parts[1] and
             ".." not in parts[1] and "//" not in parts[1]):
@@ -67,7 +69,7 @@ def respond(sock):
             transmit("HTTP/1.0 200 OK\n\n", sock)
             msg = get_msg("./index.html")
         elif (parts[1][1:] in os.listdir("./") and
-              (temp[1] == 'html' or temp[1] == 'css')):
+              (ext[1] == 'html' or ext[1] == 'css')):
             transmit("HTTP/1.0 200 OK\n\n", sock)
             msg = get_msg('.' + parts[1])
         else:
