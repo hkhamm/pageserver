@@ -113,7 +113,7 @@ def read_file(file):
     return msg
 
 def main():
-    port = 80 # random.randint(5000,8000)
+    port = random.randint(5000,8000)
     sock = listen(port)
     print("Listening on port {}".format(port))
     print("Socket is {}".format(sock))
