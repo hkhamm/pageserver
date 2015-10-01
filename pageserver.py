@@ -10,9 +10,9 @@ Socket programming in Python
   Serves HTML and CSS files from the directory where the program is run.
 """
 
-import socket    # Basic TCP/IP communication on the internet
-import random    # To pick a port at random, giving us some chance to pick a port not in use
-import _thread   # Response computation runs concurrently with main program
+import socket  # Basic TCP/IP communication on the internet
+import random  # To pick a port at random, giving us some chance to pick a port not in use
+import _thread  # Response computation runs concurrently with main program
 import os
 
 
@@ -30,8 +30,9 @@ def listen(portnum):
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Bind to port and make accessible from anywhere that has our IP address
     serversocket.bind(('', portnum))
-    serversocket.listen(1)    # A real server would have multiple listeners
+    serversocket.listen(1)  # A real server would have multiple listeners
     return serversocket
+
 
 def serve(sock, func):
     """
@@ -49,6 +50,7 @@ def serve(sock, func):
         (clientsocket, address) = sock.accept()
         _thread.start_new_thread(func, (clientsocket,))
 
+
 def respond(sock):
     """
     Respond (only) to GET
@@ -62,36 +64,37 @@ def respond(sock):
 
     parts = request.split()
 
+    if len(parts) > 1 and "." in parts[1]:
+        ext = parts[1].split(".")
+
+    valid_request = False
     if (len(parts) > 1 and parts[0] == "GET" and "~" not in parts[1] and
             ".." not in parts[1] and "//" not in parts[1]):
-        if "." in parts[1]:
-            ext = parts[1].split(".")
+        valid_request = True
 
-        if parts[1] == "/":
-            transmit("HTTP/1.0 200 OK\n\n", sock)
-            msg = get_msg("./index.html")
-        elif (parts[1][1:] in os.listdir("./") and
-              (ext[1] == "html" or ext[1] == "css")):
-            transmit("HTTP/1.0 200 OK\n\n", sock)
-            msg = get_msg("." + parts[1])
-        else:
-            transmit("HTTP/1.0 404 Not Found\n\n", sock)
-            msg = """
-            <!DOCTYPE html>
-            <html>
-            <head><title>404 Not Found</title></head>
-            <body>
-            <h1>404 Not Found</h1>
-            <ul>
-            <li>Message: The specified page does not exist.</li>
-            <li>Page: {}</li>
-            </ul>
-            <hr/>
-            </body>
-            </html>
-            """.format(parts[1])
+    if valid_request and parts[1] == "/":
+        transmit("HTTP/1.0 200 OK\n\n", sock)
+        msg = get_msg("./index.html")
+    elif valid_request and parts[1][1:] in os.listdir("./") and (ext[1] == "html" or ext[1] == "css"):
+        transmit("HTTP/1.0 200 OK\n\n", sock)
+        msg = get_msg("." + parts[1])
     else:
-        msg = "\nI don't handle this request: {}\n".format(request)
+        transmit("HTTP/1.0 404 Not Found\n\n", sock)
+        msg = "404 Not Found\n\nI don't handle this request: {}\n".format(request)
+        # msg = """
+        # <!DOCTYPE html>
+        # <html>
+        # <head><title>404 Not Found</title></head>
+        # <body>
+        # <h1>404 Not Found</h1>
+        # <p>{} does not exist.</p>
+        # <hr/>
+        # <p>I don't handle this request:</p>
+        # <p>{}</p>
+        # <hr/>
+        # </body>
+        # </html>
+        # """.format(parts[1], request)
 
     transmit(msg, sock)
 
@@ -99,16 +102,19 @@ def respond(sock):
 
     return
 
+
 def transmit(msg, sock):
     """It might take several sends to get the whole buffer out"""
     sent = 0
     while sent < len(msg):
-        buff = bytes( msg[sent: ], encoding="utf-8")
-        sent += sock.send( buff )
+        buff = bytes(msg[sent:], encoding="utf-8")
+        sent += sock.send(buff)
+
 
 def get_msg(filename):
     f = open(filename, 'r')
     return read_file(f)
+
 
 def read_file(file):
     msg = ""
@@ -116,11 +122,13 @@ def read_file(file):
         msg = msg + line
     return msg
 
+
 def main():
-    port = random.randint(5000,8000)
+    port = random.randint(5000, 8000)
     sock = listen(port)
     print("Listening on port {}".format(port))
     print("Socket is {}".format(sock))
     serve(sock, respond)
+
 
 main()
