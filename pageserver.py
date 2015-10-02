@@ -14,6 +14,7 @@ import socket  # Basic TCP/IP communication on the internet
 import random  # To pick a port at random, giving us some chance to pick a port not in use
 import _thread  # Response computation runs concurrently with main program
 import os
+import re
 
 
 def listen(portnum):
@@ -67,34 +68,22 @@ def respond(sock):
     if len(parts) > 1 and "." in parts[1]:
         ext = parts[1].split(".")
 
+    pattern = re.compile('/[\w]*[.](?=html|css)') # /a-zA-Z0-9_*.(html|css)
+
     valid_request = False
-    if (len(parts) > 1 and parts[0] == "GET" and "~" not in parts[1] and
-            ".." not in parts[1] and "//" not in parts[1]):
+    if len(parts) > 1 and parts[0] == "GET":
         valid_request = True
 
     if valid_request and parts[1] == "/":
         transmit("HTTP/1.0 200 OK\n\n", sock)
         msg = get_msg("./index.html")
-    elif valid_request and parts[1][1:] in os.listdir("./") and (ext[1] == "html" or ext[1] == "css"):
+    elif (valid_request and parts[1][1:] in os.listdir("./") and
+          pattern.match(parts[1])):
         transmit("HTTP/1.0 200 OK\n\n", sock)
         msg = get_msg("." + parts[1])
     else:
         transmit("HTTP/1.0 404 Not Found\n\n", sock)
-        msg = "404 Not Found\n\nI don't handle this request: {}\n".format(request)
-        # msg = """
-        # <!DOCTYPE html>
-        # <html>
-        # <head><title>404 Not Found</title></head>
-        # <body>
-        # <h1>404 Not Found</h1>
-        # <p>{} does not exist.</p>
-        # <hr/>
-        # <p>I don't handle this request:</p>
-        # <p>{}</p>
-        # <hr/>
-        # </body>
-        # </html>
-        # """.format(parts[1], request)
+        msg = get_msg("./404.html")
 
     transmit(msg, sock)
 
